@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio to Text</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+ 
+    <div class="container">
+ 
+        <div class="top-center">
+            <h1>PGD DS & AI</h1>
+            <h2>Batch 5 NED University</h2>
+            <h2>Project Submitted By Saqib Ali</h2>
+        </div>
+
+<!-- Left Division -->
+<div class="left-division">
+    <h1>Text to Speech</h1>
+    <div class="form-group">
+        <label for="text-input">Enter Text:</label>
+        <textarea name="text-input" id="text-input" rows="4"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="target-language">Select Target Language:</label>
+        <select name="target-language" id="target-language">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <!-- Add more languages as needed -->
+        </select>
+    </div>
+    <div class="form-group">
+        <button id="convert-to-speech" class="browse-button">Convert Text to Speech</button>
+    </div>
+    <!-- Display the converted audio -->
+    <h2>Converted Audio:</h2>
+    <audio id="audio-player" controls>
+        <source id="audio-source" src="" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+</div>
+
+        <!-- Right Division -->
+        <div class="right-division">
+            <h1>Upload an Audio File</h1>
+            <form action="/" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="audio">Select an Audio File:</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" name="audio" id="audio" accept=".wav" class="file-input" style="display: none;">
+                        <label class="browse-button" for="audio">Browse</label>
+                        <span id="file-path" class="file-path">No file selected</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="target-language">Select Target Language:</label>
+                    <select name="target-language" id="target-language">
+                        {% for lang_code, lang_label in language_labels.items() %}
+                            <option value="{{ lang_code }}">{{ lang_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Upload and Convert" class="browse-button">
+                </div>
+            </form>
+            
+            {% if text %}
+            <div class="text-box">
+                <h2>Recognized Text:</h2>
+                <p>{{ text }}</p>
+            </div>
+            <div class="text-box">
+                <h2>Translated Text:</h2>
+                <p>{{ translated_text }}</p>
+            </div>
+
+            <h2>Translated Audio:</h2>
+            <audio controls>
+                <source src="{{ url_for('play_audio', filename='output.mp3') }}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            {% endif %}
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Get references to HTML elements
+            const convertButton = document.getElementById("convert-to-speech"); // Button for text-to-speech conversion
+            const textInput = document.getElementById("text-input"); // Text input field
+            const audioPlayer = document.getElementById("audio-player"); // Audio player element
+            const audioSource = document.getElementById("audio-source"); // Audio source element
+            const targetLanguageSelect = document.getElementById("target-language"); // Language selection dropdown
+            
+            // Add an event listener to the convertButton (Convert Text to Speech button)
+            convertButton.addEventListener("click", function() {
+                // Get the user-entered text and the selected target language
+                const text = textInput.value;
+                const targetLanguage = targetLanguageSelect.value;
+    
+                // Check if the text input is empty
+                if (!text) {
+                    alert("Please enter text to convert.");
+                    return;
+                }
+    
+                // Generate a unique filename for the audio
+                const audioFilename = `converted_audio_${Date.now()}.mp3`;
+    
+                // Send a POST request to the Flask route for text-to-speech conversion
+                fetch("/text_to_speech", {
+                    method: "POST",
+                    body: new URLSearchParams({ "text-input": text, "filename": audioFilename, "target-language": targetLanguage }),
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                })
+                .then(response => response.json()) // Parse the response as JSON
+                .then(data => {
+                    if (data.success) {
+                        // Set the audio source and play the audio
+                        audioSource.src = `/play_audio?filename=${audioFilename}`;
+                        audioPlayer.load();
+                        audioPlayer.play();
+                    } else {
+                        alert("Text-to-speech conversion failed.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("An error occurred.");
+                });
+            });
+        });
+    </script>
+        
+</body>
+<style>
+    /* Reset default margin and padding */
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Center all components vertically and horizontally */
+    body, html {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+    }
+
+    /* Style for the container */
+    .container {
+        display: flex;
+        justify-content: space-between; /* Create a two-division layout */
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 800px; /* Adjust the maximum width as needed */
+    }
+
+    /* Style for the form groups */
+    .form-group {
+        margin-bottom: 20px;
+        padding: 10px; /* Add padding */
+    }
+
+    /* Style for labels */
+    .form-group label {
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: block; /* Display labels as blocks for better spacing */
+    }
+
+    /* Style for inputs and select */
+    input[type="file"], select, input[type="submit"], #text-input {
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Style for buttons */
+    .browse-button {
+        background-color: #007bff;
+        color: #fff;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        padding: 10px 20px; /* Add padding */
+        border: none;
+        border-radius: 3px;
+    }
+
+    .browse-button:hover {
+        background-color: #0056b3;
+    }
+
+    /* Style for the audio element */
+    audio {
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    /* Style for the file path display */
+    .file-path {
+        color: #777;
+        font-size: 14px;
+        margin-top: 5px;
+        text-align: left;
+    }
+
+    /* Style for the browse button */
+    .file-input-wrapper {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style for the text boxes */
+    .text-box {
+        text-align: left;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        margin-top: 10px;
+    }
+
+    .text-box h2 {
+        margin-bottom: 10px;
+    }
+
+    /* Style for the left division */
+    .left-division {
+        flex: 1; /* Occupy 50% of the container */
+        margin-right: 10px; /* Add spacing between left and right divisions */
+        padding: 20px; /* Add padding */
+        border: 1px solid #ccc; /* Add border */
+    }
+
+    /* Style for the right division */
+    .right-division {
+        flex: 1; /* Occupy 50% of the container */
+        padding: 20px; /* Add padding */
+        border: 1px solid #ccc; /* Add border */
+    }
+    .top-center {
+            text-align: center; /* Center-align text horizontally */
+            margin: 20px 0; /* Add spacing above and below the headings */
+        }
+
+        /* Style for the main heading */
+        .top-center h1 {
+            font-size: 28px; /* Adjust the font size as needed */
+            font-weight: bold; /* Make it bold */
+            color: #007bff; /* Change the text color to blue */
+            margin-bottom: 10px; /* Add spacing below the main heading */
+        }
+
+        /* Style for the subheadings */
+        .top-center h2 {
+            font-size: 18px; /* Adjust the font size as needed */
+            color: #333; /* Change the text color to dark gray */
+        }
+</style>
+</html>
